@@ -1,0 +1,81 @@
+import sqlite3
+from datetime import datetime
+
+# Database connection
+conn = sqlite3.connect('hotel.db')
+c = conn.cursor()
+
+# Create table for reservations if not exists
+c.execute('''CREATE TABLE IF NOT EXISTS reservations
+             (id INTEGER PRIMARY KEY AUTOINCREMENT, 
+             guest_name TEXT, 
+             check_in_date TEXT, 
+             check_out_date TEXT, 
+             room_number INTEGER)''')
+conn.commit()
+
+# Function to add a reservation
+def add_reservation(guest_name, check_in_date, check_out_date, room_number):
+    c.execute('''INSERT INTO reservations (guest_name, check_in_date, check_out_date, room_number) 
+                 VALUES (?, ?, ?, ?)''', (guest_name, check_in_date, check_out_date, room_number))
+    conn.commit()
+
+# Function to view all reservations
+def view_reservations():
+    c.execute('''SELECT * FROM reservations''')
+    reservations = c.fetchall()
+    for reservation in reservations:
+        print("Reservation ID:", reservation[0])
+        print("Guest Name:", reservation[1])
+        print("Check-in Date:", reservation[2])
+        print("Check-out Date:", reservation[3])
+        print("Room Number:", reservation[4])
+        print()
+
+# Function to delete a reservation
+def delete_reservation(reservation_id):
+    c.execute('''DELETE FROM reservations WHERE id = ?''', (reservation_id,))
+    conn.commit()
+
+# Function to check room availability for given dates
+def check_room_availability(check_in_date, check_out_date):
+    c.execute('''SELECT room_number FROM reservations 
+                 WHERE check_in_date <= ? AND check_out_date >= ?''', (check_out_date, check_in_date))
+    reserved_rooms = [row[0] for row in c.fetchall()]
+    return [room for room in range(1, 11) if room not in reserved_rooms]
+
+# Main menu
+def main_menu():
+    while True:
+        print("\n=== Hotel Management System ===")
+        print("1. Add Reservation")
+        print("2. View Reservations")
+        print("3. Delete Reservation")
+        print("4. Exit")
+        choice = input("Enter your choice: ")
+        
+        if choice == '1':
+            guest_name = input("Enter guest name: ")
+            check_in_date = input("Enter check-in date (YYYY-MM-DD): ")
+            check_out_date = input("Enter check-out date (YYYY-MM-DD): ")
+            available_rooms = check_room_availability(check_in_date, check_out_date)
+            if available_rooms:
+                room_number = int(input(f"Available rooms for given dates: {available_rooms}. Choose room number: "))
+                add_reservation(guest_name, check_in_date, check_out_date, room_number)
+                print("Reservation added successfully!")
+            else:
+                print("No rooms available for given dates.")
+        elif choice == '2':
+            view_reservations()
+        elif choice == '3':
+            reservation_id = int(input("Enter reservation ID to delete: "))
+            delete_reservation(reservation_id)
+            print("Reservation deleted successfully!")
+        elif choice == '4':
+            print("Exiting program...")
+            break
+        else:
+            print("Invalid choice. Please try again.")
+
+if __name__ == "__main__":
+    main_menu()
